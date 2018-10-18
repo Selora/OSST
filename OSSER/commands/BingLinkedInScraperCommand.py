@@ -13,11 +13,9 @@ class BingLinkedInScraperCommand(AbstractCommand):
 
         def __init__(self,
                      company: str,
-                     location: str,
                      additional_query_args
                      ):
             self.company = company
-            self.location = location
             self.additional_query = additional_query_args
 
     def __init__(self,
@@ -30,9 +28,8 @@ class BingLinkedInScraperCommand(AbstractCommand):
 
     @AbstractCommand.leaf_command
     def execute(self):
-        search_term = 'site:www.linkedin.com/in intitle:"{company}" "Location {location}" {add_query}'.format(
+        search_term = 'site:www.linkedin.com/in intitle:"{company}" {add_query}'.format(
             company=self.command_args.company,
-            location=self.command_args.location,
             add_query=self.command_args.additional_query)
 
         self._results = BingSearch(args=self.bing_search_module_args).do_search(
@@ -42,18 +39,20 @@ class BingLinkedInScraperCommand(AbstractCommand):
 if __name__ == '__main__':
     if len(sys.argv) != 5:
         api_key = input("api:")
+        max_pages = int(input("max_search_pages (50 results per pages):"))
         company = input("company:")
-        location = input("location:")
-        additional_query_args = input("additional_query:")
+        additional_query_args = input("additional_query (ex: \"Location Florida\" Accounting):")
     else:
         api_key = sys.argv[1]
-        company = sys.argv[2]
-        location = sys.argv[3]
+        max_pages = int(sys.argv[2])
+        company = sys.argv[3]
         additional_query_args = sys.argv[4]
 
-    bing_args = BingSearch.Args(bing_api_key=api_key)
+    bing_args = BingSearch.Args(
+            bing_api_key=api_key,
+            max_queries=max_pages
+            )
     command_args = BingLinkedInScraperCommand.Args(company=company,
-                                                   location=location,
                                                    additional_query_args=additional_query_args)
 
     cmd = BingLinkedInScraperCommand(bing_search_module_args=bing_args,
@@ -64,11 +63,9 @@ if __name__ == '__main__':
         print("Executed successfully!")
         print("Results ({}):".format(len(cmd.results)))
 
-        filename = "linkedin_{company}_{location}_{timestamp}.json".format(
+        filename = "linkedin_{company}_{timestamp}.json".format(
             company=company.replace(' ', '-'),
-            location=location.replace(' ', '-'),
             timestamp=str(int(time.time()))
-
         )
 
         print("Storing results in ({}):".format(filename))
